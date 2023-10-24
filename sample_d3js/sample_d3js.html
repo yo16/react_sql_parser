@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en" >
+  <head>
+    <title>D3.js sample</title>
+    <meta charset="utf-8" />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+  </head>
+  <body>
+    <svg width="800" height="400" xmlns="http://www.w3.org/2000/svg" id="target">
+        <rect x="0" y="0" width="800" height="400" fill="#cccccc" />
+    </svg>
+    <script>
+        const boxes = [{x:200, y:100}, {x:200, y:250}, {x:600, y:300}];
+        const box_def = {
+          width: 200,
+          height: 100,
+          fill: "#ffffff",
+          rx: 5,
+          ry: 5
+        }
+        const connects = [{left:0, right:2}, {left:1, right:2}];
+        const connects_def = {
+          circle: {
+            fill: "#777777",
+            r: 5
+          },
+          path: {
+            stroke: "#999999",
+            fill: "none",
+            stroke_width: "3",
+            cp_distance: 100
+          }
+        }
+
+        const svg = d3.select("#target");
+        svg.selectAll("rect.box")
+          .data(boxes)
+          .enter()
+          .append("rect")
+          .attr("x", d => d.x - box_def.width/2)
+          .attr("y", d => d.y - box_def.height/2)
+          .attr("width", box_def.width)
+          .attr("height", box_def.height)
+          .attr("fill", box_def.fill)
+          .attr("rx", box_def.rx)
+          .attr("ry", box_def.ry)
+          .attr("class", "box")
+        ;
+
+        svg.selectAll("path.connet")
+          .data(connects)
+          .enter()
+          .append("path")
+          .attr("d", d => (
+            "M " + (boxes[d.left].x+box_def.width/2) + " " + (boxes[d.left].y) +
+            " C " + (boxes[d.left].x+box_def.width/2+connects_def.path.cp_distance) + " " + (boxes[d.left].y) +
+            ", " + (boxes[d.right].x-box_def.width/2-connects_def.path.cp_distance) + " " + (boxes[d.right].y) +
+            ", " + (boxes[d.right].x-box_def.width/2) + " " + (boxes[d.right].y)
+          ))
+          .attr("stroke", connects_def.path.stroke)
+          .attr("fill", connects_def.path.fill)
+          .attr("stroke-width", connects_def.path.stroke_width)
+        ;
+        svg.selectAll("circle.dot_left")
+          .data(connects)
+          .enter()
+          .append("circle")
+          .attr("cx", d => boxes[d.left].x+box_def.width/2)
+          .attr("cy", d => boxes[d.left].y)
+          .attr("r", 5)
+          .attr("fill", "#777777")
+        ;
+        svg.selectAll("circle.dot_right")
+          .data(connects)
+          .enter()
+          .append("circle")
+          .attr("cx", d => boxes[d.right].x-box_def.width/2)
+          .attr("cy", d => boxes[d.right].y)
+          .attr("r", 5)
+          .attr("fill", "#777777")
+        ;
+    </script>
+</body>
+</html>
