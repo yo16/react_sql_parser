@@ -2,7 +2,7 @@ import React, { useState } from "react";
 
 import ParsedSql from "./ParsedSql";
 
-export default function RegistSql({ totalStars = 5 }) {
+export default function RegistSql() {
     const [selectedFile, setSelectedFile] = useState("");
 
     const handleInputChange = event => {

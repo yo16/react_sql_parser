@@ -2,8 +2,17 @@ import React, { useState } from "react";
 import { Parser } from "node-sql-parser/build/bigquery";
 
 export default function ParsedSql({query="select * from duel;"}){
+    if ( query.length == 0 ) {
+        return (<></>);
+    }
+    console.log(query);
     const parser = new Parser();
-    const ast = parser.astify(query);
+    var ast = {};
+    try {
+        ast = parser.astify(query);
+    } catch(error){
+        console.log(error);
+    }
     console.log(ast);
 
     return (
