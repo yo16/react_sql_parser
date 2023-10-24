@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en" >
+  <head>
+    <title>node-sql-parser</title>
+    <meta charset="utf-8" />
+  </head>
+  <body>
+    <p><em>Check console to see the output</em></p>
+    <script src="https://unpkg.com/node-sql-parser/umd/postgresql.umd.js"></script>
+    <script>
+      window.onload = function () {
+        // Example parser
+        const parser = new NodeSQLParser.Parser()
+        //const ast = parser.astify("select id, name from students where age < 18")
+        const ast = parser.astify("CREATE TABLE IF NOT EXISTS mydataset.newtable (x INT64, y STRING, z BOOL) OPTIONS(description = 'My example table');")
+        console.log(ast)
+        //const sql = parser.sqlify(ast)
+        //console.log(sql)
+      }
+    </script>
+  </body>
+</html>

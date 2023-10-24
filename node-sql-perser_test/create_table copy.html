@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en" >
+  <head>
+    <title>node-sql-parser</title>
+    <meta charset="utf-8" />
+  </head>
+  <body>
+    <p><em>Check console to see the output</em></p>
+    <script src="https://unpkg.com/node-sql-parser/umd/bigquery.umd.js"></script>
+    <script>
+      window.onload = function () {
+        // Example parser
+        const parser = new NodeSQLParser.Parser()
+        //const ast = parser.astify("CREATE TABLE mydataset.newtable ( x INT64 )");
+        const ast = parser.astify("create table dbname.tableName (id1 BINARY(16), id2 BINARY);");
+        
+        //const ast = parser.astify('CREATE or replace TABLE "public"."authors_table" ("author_id" integer NOT NULL,"first_name" character varying NOT NULL,"last_name" character varying NOT NULL,"birth_date" date);');
+        console.log(ast)
+        const sql = parser.sqlify(ast)
+        console.log(sql)
+      }
+    </script>
+  </body>
+</html>
