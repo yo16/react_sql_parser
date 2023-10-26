@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en" >
+  <head>
+    <title>D3.js Lineage2 sample</title>
+    <meta charset="utf-8" />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+  </head>
+  <body>
+    <svg width="800" height="400" xmlns="http://www.w3.org/2000/svg" id="target">
+        <rect x="0" y="0" width="800" height="400" fill="#cccccc" />
+    </svg>
+    <script>
+      const ast_select = { "type": "select", "as_struct_val": null, "distinct": null, "columns": [ { "expr": { "type": "column_ref", "table": "user_asobistore", "column": "mbid", "subFields": [] }, "as": "service_user_id" }, { "expr": { "type": "column_ref", "table": "user_asobistore", "column": "bn_user_id", "subFields": [] }, "as": "bnid" }, { "expr": { "type": "function", "name": "IFNULL", "args": { "type": "expr_list", "value": [ { "type": "column_ref", "table": "user_consent_flg", "column": "consent_flg", "subFields": [] }, { "type": "number", "value": -1 } ] }, "over": null }, "as": "consent_flg" }, { "expr": { "type": "column_ref", "table": null, "column": "max_date" }, "as": "as_of_date" } ], "from": [ { "db": null, "table": "user_asobistore", "as": null, "operator": null }, { "db": null, "table": "user_consent_flg", "as": null, "join": "LEFT JOIN", "on": { "type": "binary_expr", "operator": "=", "left": { "type": "column_ref", "table": "user_asobistore", "column": "customerid", "subFields": [] }, "right": { "type": "column_ref", "table": "user_consent_flg", "column": "user_id", "subFields": [] } } } ], "for_sys_time_as_of": null, "where": null, "with": null, "groupby": null, "having": null, "qualify": null, "orderby": null, "limit": null, "window": null, "_orderby": null, "_limit": null };
+      console.log(ast_select);
+
+      var lineage_tables = {
+        tables: [],
+        table_lineage: [],
+        column_lineage: []
+      };
+
+      class TableInfo {
+        constructor(table_name){
+          this.table_name = table_name;
+          this.columns = [];
+        }
+        add_column(col_name){
+          if (!this.columns.includes(col_name)){
+            this.columns.push(col_name);
+          }
+        }
+        get_colmn_idx(column_name){
+          return this.columns.indexOf(column_name);
+        }
+      }
+      class TableManageInfo {
+        constructor(){
+          this.tables = [null];
+          this.table_objs = [new TableInfo(null)];
+          this.links = [];
+          this.table_rank = [0];
+          this.map_table_idx = {null:0};
+        }
+        add_table(table_name){
+          if (!this.tables.includes(table_name)){
+            this.tables.push(table_name);
+            this.table_objs.push(new TableInfo(table_name));
+            this.table_rank.push(0);
+            this.map_table_idx[table_name] = this.tables.length - 1;
+          }
+        }
+        get_table_idx(table_name){
+          return this.tables.indexOf(table_name);
+        }
+        add_table_coumn(table_name, column_name){
+          this.table_objs[this.map_table_idx[table_name]].add_column(column_name);
+        }
+        add_table_link(from_table_name, to_table_name){
+          const from_table_idx = this.get_table_idx(from_table_name);
+          const to_table_idx = this.get_table_idx(to_table_name);
+          const table_set = [
+            from_table_idx,
+            to_table_idx
+          ];
+          const json_table_set = JSON.stringify(table_set);
+          // 存在していなかったら追加
+          for (const ln of this.links) {
+            if (JSON.stringify(ln)==json_table_set) {
+              return;
+            }
+          }
+          this.links.push(table_set);
+          if (this.table_rank[from_table_idx] < this.table_rank[to_table_idx] + 1){
+            this.table_rank[from_table_idx] = this.table_rank[to_table_idx] + 1;
+          }
+        }
+      }
+
+      function get_tab_cols_from_expr(expr){
+        // exprから元のテーブル名,列名を取り出す
+        let from_columns = [];
+        if (expr.type=="column_ref"){
+          from_columns.push({
+            table_name: expr.table,
+            column_name: expr.column
+          });
+        }else if (expr.type=="function"){
+          console.assert(expr.args.type == "expr_list", "[ERROR!] Support only [expr_list].");
+          if (expr.args.type == "expr_list"){
+            expr.args.value.forEach(v => {
+              if (v.type == "column_ref"){
+                from_columns.push({
+                  table_name: v.table,
+                  column_name: v.column
+                });
+              }else if (v.type == "number"){
+                ;
+              }else{
+                console.error("[ERROR!] Unkown expr.type["+v.type+"]");
+              }
+            })
+          }
+
+        }else{
+          console.error("[ERROR!] Unknown expr.type["+d.expr.type+"]");
+        }
+        return from_columns;
+      }
+
+      function get_lineage_tables(ast_select){
+        let t_mng = new TableManageInfo();
+        // 自分自身、from、withからtablesを作る
+        const current_table = "select";   // T.B.D!!!
+        t_mng.add_table(current_table);
+        ast_select.from.forEach(d => {t_mng.add_table(d.table)});
+        if (ast_select.with){
+          ast_select.with.forEach(d => {t_mng.add_table(d.name.value)});
+        }
+
+        ast_select.columns.forEach(d => {
+          // exprから元の列名を取り出す
+          let from_tab_cols = get_tab_cols_from_expr(d.expr);
+
+          // 本体の列を追加
+          if (d.as){
+            t_mng.add_table_coumn(current_table, d.as);
+          }else{
+            t_mng.add_table_coumn(current_table, from_tab_cols[0].column_name);   // あやしい
+          }
+
+          // 参照元の列を追加
+          from_tab_cols.forEach(o => {
+            console.log(o);
+            t_mng.add_table_coumn(o.table_name, o.column_name);
+          })
+
+          // リンクを追加
+          from_tab_cols.forEach(o => {
+            t_mng.add_table_link(o.table_name, current_table);
+          })
+        });
+
+        console.log(t_mng);
+
+
+
+        //return t_mng;の、オブジェクト化したもの
+      }
+      get_lineage_tables(ast_select);
+
+
+    </script>
+</body>
+</html>
