@@ -13,11 +13,6 @@
       const ast_select = { "type": "select", "as_struct_val": null, "distinct": null, "columns": [ { "expr": { "type": "column_ref", "table": "user_asobistore", "column": "mbid", "subFields": [] }, "as": "service_user_id" }, { "expr": { "type": "column_ref", "table": "user_asobistore", "column": "bn_user_id", "subFields": [] }, "as": "bnid" }, { "expr": { "type": "function", "name": "IFNULL", "args": { "type": "expr_list", "value": [ { "type": "column_ref", "table": "user_consent_flg", "column": "consent_flg", "subFields": [] }, { "type": "number", "value": -1 } ] }, "over": null }, "as": "consent_flg" }, { "expr": { "type": "column_ref", "table": null, "column": "max_date" }, "as": "as_of_date" } ], "from": [ { "db": null, "table": "user_asobistore", "as": null, "operator": null }, { "db": null, "table": "user_consent_flg", "as": null, "join": "LEFT JOIN", "on": { "type": "binary_expr", "operator": "=", "left": { "type": "column_ref", "table": "user_asobistore", "column": "customerid", "subFields": [] }, "right": { "type": "column_ref", "table": "user_consent_flg", "column": "user_id", "subFields": [] } } } ], "for_sys_time_as_of": null, "where": null, "with": null, "groupby": null, "having": null, "qualify": null, "orderby": null, "limit": null, "window": null, "_orderby": null, "_limit": null };
       console.log(ast_select);
 
-      var lineage_tables = {
-        tables: [],
-        table_lineage: [],
-        column_lineage: []
-      };
 
       class TableInfo {
         constructor(table_name){
@@ -29,7 +24,7 @@
             this.columns.push(col_name);
           }
         }
-        get_colmn_idx(column_name){
+        get_column_idx(column_name){
           return this.columns.indexOf(column_name);
         }
       }
