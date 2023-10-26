@@ -10,7 +10,7 @@
         <rect x="0" y="0" width="800" height="400" fill="#cccccc" />
     </svg>
     <script>
-        const boxes = [{x:200, y:100}, {x:200, y:250}, {x:600, y:300}];
+        var g_boxes = [{x:200, y:100}, {x:200, y:250}, {x:600, y:300}];
         const box_def = {
           width: 200,
           height: 100,
@@ -31,54 +31,110 @@
             cp_distance: 100
           }
         }
+        const transitions_def = {
+          duration: 500,
+          ease: d3.easeCubicOut
+        }
 
-        const svg = d3.select("#target");
-        svg.selectAll("rect.box")
-          .data(boxes)
-          .enter()
-          .append("rect")
-          .attr("x", d => d.x - box_def.width/2)
-          .attr("y", d => d.y - box_def.height/2)
-          .attr("width", box_def.width)
-          .attr("height", box_def.height)
-          .attr("fill", box_def.fill)
-          .attr("rx", box_def.rx)
-          .attr("ry", box_def.ry)
-          .attr("class", "box")
-        ;
+        function drawBox(boxes, create=true){
+          const svg = d3.select("#target");
+          let box_elm = svg.selectAll("rect.box")
+            .data(boxes)
+          ;
+          if (create){
+            box_elm = box_elm.enter()
+              .append("rect")
+            ;
+          }else{
+            box_elm = box_elm
+              .transition()
+              .duration(transitions_def.duration)
+              .ease(transitions_def.ease)
+            ;
+          }
+          box_elm
+            .attr("x", d => d.x - box_def.width/2)
+            .attr("y", d => d.y - box_def.height/2)
+            .attr("width", box_def.width)
+            .attr("height", box_def.height)
+            .attr("fill", box_def.fill)
+            .attr("rx", box_def.rx)
+            .attr("ry", box_def.ry)
+            .attr("class", "box")
+          ;
 
-        svg.selectAll("path.connet")
-          .data(connects)
-          .enter()
-          .append("path")
-          .attr("d", d => (
-            "M " + (boxes[d.left].x+box_def.width/2) + " " + (boxes[d.left].y) +
-            " C " + (boxes[d.left].x+box_def.width/2+connects_def.path.cp_distance) + " " + (boxes[d.left].y) +
-            ", " + (boxes[d.right].x-box_def.width/2-connects_def.path.cp_distance) + " " + (boxes[d.right].y) +
-            ", " + (boxes[d.right].x-box_def.width/2) + " " + (boxes[d.right].y)
-          ))
-          .attr("stroke", connects_def.path.stroke)
-          .attr("fill", connects_def.path.fill)
-          .attr("stroke-width", connects_def.path.stroke_width)
-        ;
-        svg.selectAll("circle.dot_left")
-          .data(connects)
-          .enter()
-          .append("circle")
-          .attr("cx", d => boxes[d.left].x+box_def.width/2)
-          .attr("cy", d => boxes[d.left].y)
-          .attr("r", 5)
-          .attr("fill", "#777777")
-        ;
-        svg.selectAll("circle.dot_right")
-          .data(connects)
-          .enter()
-          .append("circle")
-          .attr("cx", d => boxes[d.right].x-box_def.width/2)
-          .attr("cy", d => boxes[d.right].y)
-          .attr("r", 5)
-          .attr("fill", "#777777")
-        ;
+          let path_elm = svg.selectAll("path.connet")
+            .data(connects)
+          ;
+          if (create){
+            path_elm = path_elm
+              .enter()
+              .append("path")
+            ;
+          }else{
+            path_elm = path_elm
+              .transition()
+              .duration(transitions_def.duration)
+              .ease(transitions_def.ease)
+            ;
+          }
+          path_elm
+            .attr("d", d => (
+              "M " + (boxes[d.left].x+box_def.width/2) + " " + (boxes[d.left].y) +
+              " C " + (boxes[d.left].x+box_def.width/2+connects_def.path.cp_distance) + " " + (boxes[d.left].y) +
+              ", " + (boxes[d.right].x-box_def.width/2-connects_def.path.cp_distance) + " " + (boxes[d.right].y) +
+              ", " + (boxes[d.right].x-box_def.width/2) + " " + (boxes[d.right].y)
+            ))
+            .attr("stroke", connects_def.path.stroke)
+            .attr("fill", connects_def.path.fill)
+            .attr("stroke-width", connects_def.path.stroke_width)
+            .attr("class", "connet")
+          ;
+
+          // boxからconnect_dotsを作成
+          const connect_points = connects.map(c => ({
+            x: boxes[c.left].x + box_def.width/2,
+            y: boxes[c.left].y
+          }))
+          .concat(
+            connects.map(c => ({
+              x: boxes[c.right].x - box_def.width/2,
+              y: boxes[c.right].y
+            }))
+          );
+          dot_elm = svg.selectAll("circle.dot_left")
+            .data(connect_points)
+          ;
+          if (create){
+            dot_elm = dot_elm
+              .enter()
+              .append("circle")
+            ;
+          }else{
+            dot_elm = dot_elm
+              .transition()
+              .duration(transitions_def.duration)
+              .ease(transitions_def.ease)
+            ;
+          }
+          dot_elm
+            .attr("cx", d => d.x)
+            .attr("cy", d => d.y)
+            .attr("r", 5)
+            .attr("fill", "#777777")
+            .attr("class","dot_left")
+          ;
+        }
+
+        drawBox(g_boxes);
+
+        function changeBox(){
+          let xy = g_boxes[0];
+          xy.x += 10;
+          xy.y += 20;
+          drawBox(g_boxes, false);
+        }
     </script>
+    <input type="button" value="move box!" onclick="changeBox();" />
 </body>
 </html>
