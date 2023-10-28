@@ -6,12 +6,58 @@
     <script src="https://d3js.org/d3.v7.min.js"></script>
   </head>
   <body>
-    <svg width="800" height="400" xmlns="http://www.w3.org/2000/svg" id="target">
-        <rect x="0" y="0" width="800" height="400" fill="#cccccc" />
+    <svg width="800" height="600" xmlns="http://www.w3.org/2000/svg" id="target">
+        <rect x="0" y="0" width="600" height="800" fill="#cccccc" />
     </svg>
     <script>
       const ast_select = { "type": "select", "as_struct_val": null, "distinct": null, "columns": [ { "expr": { "type": "column_ref", "table": "user_asobistore", "column": "mbid", "subFields": [] }, "as": "service_user_id" }, { "expr": { "type": "column_ref", "table": "user_asobistore", "column": "bn_user_id", "subFields": [] }, "as": "bnid" }, { "expr": { "type": "function", "name": "IFNULL", "args": { "type": "expr_list", "value": [ { "type": "column_ref", "table": "user_consent_flg", "column": "consent_flg", "subFields": [] }, { "type": "number", "value": -1 } ] }, "over": null }, "as": "consent_flg" }, { "expr": { "type": "column_ref", "table": null, "column": "max_date" }, "as": "as_of_date" } ], "from": [ { "db": null, "table": "user_asobistore", "as": null, "operator": null }, { "db": null, "table": "user_consent_flg", "as": null, "join": "LEFT JOIN", "on": { "type": "binary_expr", "operator": "=", "left": { "type": "column_ref", "table": "user_asobistore", "column": "customerid", "subFields": [] }, "right": { "type": "column_ref", "table": "user_consent_flg", "column": "user_id", "subFields": [] } } } ], "for_sys_time_as_of": null, "where": null, "with": null, "groupby": null, "having": null, "qualify": null, "orderby": null, "limit": null, "window": null, "_orderby": null, "_limit": null };
       console.log(ast_select);
+
+
+      /* for test
+      const TABLE_DEF = {
+        width: 100,
+        header_height: 30,
+        row_height: 20,
+        padding: {x:10, y:10},
+        margin: {x:30, y:30},
+        radius: 5,
+        fill: "#ff3fff"
+      }
+      const SQL_BOX_DEF = {
+        fill: "#eeeeee",
+        padding: {x:50, y:50},
+        margin: {x:30, y:10},
+        radius: 3,
+
+        title_text_offset_x: 5,
+        title_text_offset_y: 5,
+        title_text_fontsize: 14,
+
+        text_color: "#555555"
+      }
+      */
+      const TABLE_DEF = {
+        width: 100,
+        header_height: 30,
+        row_height: 20,
+        padding: {x:10, y:10},
+        margin: {x:30, y:30},
+        radius: 5,
+        fill: "#ff3fff"
+      }
+      const SQL_BOX_DEF = {
+        fill: "#eeeeee",
+        padding: {x:50, y:50},
+        margin: {x:30, y:10},
+        radius: 3,
+
+        title_text_offset_x: 5,
+        title_text_offset_y: 5,
+        title_text_fontsize: 14,
+
+        text_color: "#555555"
+      }
 
 
       class TableInfo {
@@ -30,11 +76,13 @@
       }
       class TableManageInfo {
         constructor(){
-          this.tables = [null];
-          this.table_objs = [new TableInfo(null)];
+          this.tables = [];
+          this.table_objs = [];
           this.links = [];
-          this.table_rank = [0];
-          this.map_table_idx = {null:0};
+          this.table_rank = [];
+          this.map_table_idx = {};
+
+          this.add_table(null);
         }
         add_table(table_name){
           if (!this.tables.includes(table_name)){
@@ -125,7 +173,6 @@
 
           // 参照元の列を追加
           from_tab_cols.forEach(o => {
-            console.log(o);
             t_mng.add_table_coumn(o.table_name, o.column_name);
           })
 
@@ -135,13 +182,163 @@
           })
         });
 
-        console.log(t_mng);
-
-
-
-        //return t_mng;の、オブジェクト化したもの
+        //console.log(t_mng);
+        return t_mng;
       }
-      get_lineage_tables(ast_select);
+
+      function get_table_height(table_info){
+        return TABLE_DEF.padding.y * 3
+          + TABLE_DEF.header_height
+          + table_info.columns.length * TABLE_DEF.row_height;
+      }
+      function draw_onetable(svg, table_info, offset_x, offset_y){
+        const tablename_id = (table_info.table_name?table_info.table_name:"__no_name__")
+          .replace(/ /g, "_")
+          .replace(/\./g, "_")
+          .toLowerCase();
+        const tbl_x =
+          offset_x
+          + TABLE_DEF.margin.x
+        ;
+        const tbl_y =
+          offset_y
+          + TABLE_DEF.margin.y
+        ;
+        const tbl_width = TABLE_DEF.width;
+        const tbl_height = get_table_height(table_info);
+        svg.selectAll(`rect#table_${tablename_id}`)
+          .data([1])
+          .enter()
+          .append("rect")
+            .attr("x", tbl_x)
+            .attr("y", tbl_y)
+            .attr("width", tbl_width)
+            .attr("height", tbl_height)
+            .attr("rx", TABLE_DEF.radius)
+            .attr("ry", TABLE_DEF.radius)
+            .attr("fill", TABLE_DEF.fill)
+            .attr("id", `table_${tablename_id}`)
+        ;
+
+        // for debug
+        svg.selectAll(`rect#debug_table_${tablename_id}`)
+          .data([1])
+          .enter()
+          .append("rect")
+            .attr("x", tbl_x - TABLE_DEF.margin.x)
+            .attr("y", tbl_y - TABLE_DEF.margin.y)
+            .attr("width", tbl_width + TABLE_DEF.margin.x*2)
+            .attr("height", tbl_height + TABLE_DEF.margin.y*2)
+            .attr("fill", "none")
+            .attr("stroke", "#f00")
+            .attr("stroke-width", 1)
+            .attr("stroke-dasharray", "10,5")
+            .attr("id", `debug_table_${tablename_id}`)
+          ;
+
+        return tbl_y
+          + tbl_height
+          + TABLE_DEF.margin.y
+        ;
+      }
+
+      function draw_tables_onefile(svg, t_mng, filename, create=true){
+        const filename_id = filename.replace(/ /g, "_").toLowerCase();
+        // 最大のtable_rank（onefile rectのwidth, heightで使う）
+        const table_rank_max = Math.max(...t_mng.table_rank);
+
+        const onefile_rect_elm = svg.selectAll(`g#onefile_${filename_id}`)
+          .data([1])
+          .enter()
+          .append("g")
+          .attr("id", filename_id)
+        ;
+
+        // onefile rect
+        console.debug("onefile rect");
+        let file_x = SQL_BOX_DEF.margin.x,
+        file_y = SQL_BOX_DEF.margin.y,
+        w = 
+          + SQL_BOX_DEF.padding.x * 2
+          + (table_rank_max + 1)  * (
+            TABLE_DEF.margin.x * 2 + TABLE_DEF.width
+          )
+        // hightは、各table_rankのテーブルと列の合計から算出
+        ,h = (()=>{
+            // 各ランクの高さを算出
+            let hight_by_rank = [...Array(table_rank_max+1)].map(
+              ()=>(SQL_BOX_DEF.padding.y * 2)
+            );
+            t_mng.table_objs.forEach((to,i)=>{
+              hight_by_rank[t_mng.table_rank[i]] += 
+              TABLE_DEF.margin.y * 2
+                + get_table_height(to)
+            });
+            console.log({hight_by_rank});
+            // その最大値
+            return Math.max(...hight_by_rank);
+          })()
+        ;
+        let sql_box_elm = onefile_rect_elm.selectAll(`rect#sqlbox_${filename_id}`)
+          .data([1])
+          .enter()
+          .append("rect")
+            .attr("x", file_x)
+            .attr("y", file_y)
+            .attr("width", w)
+            .attr("height", h)
+            .attr("rx", SQL_BOX_DEF.radius)
+            .attr("ry", SQL_BOX_DEF.radius)
+            .attr("fill", SQL_BOX_DEF.fill)
+            .attr("class", "box")
+            .attr("id", `sqlbox_${filename_id}`)
+        ;
+        let sql_box_text_elm = onefile_rect_elm.selectAll(`text#filename_${filename_id}`)
+          .data([1])
+          .enter()
+          .append("text")
+            .attr("x", file_x + SQL_BOX_DEF.title_text_offset_x)
+            .attr("y", file_y + SQL_BOX_DEF.title_text_offset_y+SQL_BOX_DEF.title_text_fontsize)
+            .text(filename)
+            .attr("font-size", SQL_BOX_DEF.title_text_fontsize)
+            .attr("fill", SQL_BOX_DEF.text_color)
+            .attr("id", `filename_${filename_id}`)
+        ;
+
+        // table_rankごとのオフセットポイント
+        let offset_y_by_rank = [...Array(table_rank_max+1)].map(
+          ()=>(file_y + SQL_BOX_DEF.padding.y)
+        );
+        console.log({offset_y_by_rank});
+
+        // tableを描画
+        t_mng.table_objs.forEach((to,i)=>{
+          updated_offset_y = draw_onetable(
+            onefile_rect_elm,
+            to,
+            file_x
+            + SQL_BOX_DEF.padding.x
+            + (table_rank_max - t_mng.table_rank[i]) * (
+                TABLE_DEF.width + TABLE_DEF.margin.x * 2
+              ),
+            offset_y_by_rank[t_mng.table_rank[i]]
+          );
+          offset_y_by_rank[t_mng.table_rank[i]] = updated_offset_y;
+        });
+
+      }
+
+      function add_sql_ast(d3_svg, ast, filename){
+        // parse & get TableManageInfo
+        const t_mng = get_lineage_tables(ast_select);
+
+        // draw
+        draw_tables_onefile(d3_svg, t_mng, filename);
+      }
+
+
+      const svg = d3.select("#target");
+      add_sql_ast(svg, ast_select, "test.sql");
 
 
     </script>
