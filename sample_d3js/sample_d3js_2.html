@@ -72,7 +72,7 @@
           return this.columns.indexOf(column_name);
         }
       };
-      class TableManageInfo {
+      class SqlFileInfo {
         constructor(){
           this.tables = [];
           this.table_objs = [];
@@ -149,13 +149,13 @@
       };
 
       function get_lineage_tables(ast_select){
-        let t_mng = new TableManageInfo();
+        let sql_file_info = new SqlFileInfo();
         // 自分自身、from、withからtablesを作る
         const current_table = "select";   // T.B.D!!!
-        t_mng.add_table(current_table);
-        ast_select.from.forEach(d => {t_mng.add_table(d.table)});
+        sql_file_info.add_table(current_table);
+        ast_select.from.forEach(d => {sql_file_info.add_table(d.table)});
         if (ast_select.with){
-          ast_select.with.forEach(d => {t_mng.add_table(d.name.value)});
+          ast_select.with.forEach(d => {sql_file_info.add_table(d.name.value)});
         }
 
         ast_select.columns.forEach(d => {
@@ -164,24 +164,24 @@
 
           // 本体の列を追加
           if (d.as){
-            t_mng.add_table_coumn(current_table, d.as);
+            sql_file_info.add_table_coumn(current_table, d.as);
           }else{
-            t_mng.add_table_coumn(current_table, from_tab_cols[0].column_name);   // あやしい
+            sql_file_info.add_table_coumn(current_table, from_tab_cols[0].column_name);   // あやしい
           }
 
           // 参照元の列を追加
           from_tab_cols.forEach(o => {
-            t_mng.add_table_coumn(o.table_name, o.column_name);
+            sql_file_info.add_table_coumn(o.table_name, o.column_name);
           })
 
           // リンクを追加
           from_tab_cols.forEach(o => {
-            t_mng.add_table_link(o.table_name, current_table);
+            sql_file_info.add_table_link(o.table_name, current_table);
           })
         });
 
-        //console.log(t_mng);
-        return t_mng;
+        //console.log(sql_file_info);
+        return sql_file_info;
       };
 
       function get_table_height(table_info){
@@ -302,10 +302,10 @@
         ;
       };
 
-      function draw_tables_onefile(svg, t_mng, filename, create=true){
+      function draw_tables_onefile(svg, sql_file_info, filename, create=true){
         const filename_id = filename.replace(/ /g, "_").toLowerCase();
         // 最大のtable_rank（onefile rectのwidth, heightで使う）
-        const table_rank_max = Math.max(...t_mng.table_rank);
+        const table_rank_max = Math.max(...sql_file_info.table_rank);
 
         const onefile_rect_elm = svg.selectAll(`g#onefile_${filename_id}`)
           .data([1])
@@ -328,8 +328,8 @@
             let hight_by_rank = [...Array(table_rank_max+1)].map(
               ()=>(SQL_BOX_DEF.padding.y * 2)
             );
-            t_mng.table_objs.forEach((to,i)=>{
-              hight_by_rank[t_mng.table_rank[i]] += 
+            sql_file_info.table_objs.forEach((to,i)=>{
+              hight_by_rank[sql_file_info.table_rank[i]] += 
               TABLE_DEF.margin.y * 2
                 + get_table_height(to)
             });
@@ -369,28 +369,28 @@
         );
 
         // tableを描画
-        t_mng.table_objs.forEach((to,i)=>{
+        sql_file_info.table_objs.forEach((to,i)=>{
           updated_offset_y = draw_onetable(
             onefile_rect_elm,
             to,
             file_x
             + SQL_BOX_DEF.padding.x
-            + (table_rank_max - t_mng.table_rank[i]) * (
+            + (table_rank_max - sql_file_info.table_rank[i]) * (
                 TABLE_DEF.width + TABLE_DEF.margin.x * 2
               ),
-            offset_y_by_rank[t_mng.table_rank[i]]
+            offset_y_by_rank[sql_file_info.table_rank[i]]
           );
-          offset_y_by_rank[t_mng.table_rank[i]] = updated_offset_y;
+          offset_y_by_rank[sql_file_info.table_rank[i]] = updated_offset_y;
         });
 
       };
 
       function add_sql_ast(d3_svg, ast, filename){
-        // parse & get TableManageInfo
-        const t_mng = get_lineage_tables(ast_select);
+        // parse & get SqlFileInfo
+        const sql_file_info = get_lineage_tables(ast_select);
 
         // draw
-        draw_tables_onefile(d3_svg, t_mng, filename);
+        draw_tables_onefile(d3_svg, sql_file_info, filename);
       };
 
 
