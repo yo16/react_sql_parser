@@ -13,51 +13,49 @@
       const ast_select = { "type": "select", "as_struct_val": null, "distinct": null, "columns": [ { "expr": { "type": "column_ref", "table": "user_asobistore", "column": "mbid", "subFields": [] }, "as": "service_user_id" }, { "expr": { "type": "column_ref", "table": "user_asobistore", "column": "bn_user_id", "subFields": [] }, "as": "bnid" }, { "expr": { "type": "function", "name": "IFNULL", "args": { "type": "expr_list", "value": [ { "type": "column_ref", "table": "user_consent_flg", "column": "consent_flg", "subFields": [] }, { "type": "number", "value": -1 } ] }, "over": null }, "as": "consent_flg" }, { "expr": { "type": "column_ref", "table": null, "column": "max_date" }, "as": "as_of_date" } ], "from": [ { "db": null, "table": "user_asobistore", "as": null, "operator": null }, { "db": null, "table": "user_consent_flg", "as": null, "join": "LEFT JOIN", "on": { "type": "binary_expr", "operator": "=", "left": { "type": "column_ref", "table": "user_asobistore", "column": "customerid", "subFields": [] }, "right": { "type": "column_ref", "table": "user_consent_flg", "column": "user_id", "subFields": [] } } } ], "for_sys_time_as_of": null, "where": null, "with": null, "groupby": null, "having": null, "qualify": null, "orderby": null, "limit": null, "window": null, "_orderby": null, "_limit": null };
       console.log(ast_select);
 
-
-      /* for test
-      const TABLE_DEF = {
-        width: 100,
-        header_height: 30,
-        row_height: 20,
-        padding: {x:10, y:10},
-        margin: {x:30, y:30},
-        radius: 5,
-        fill: "#ff3fff"
-      }
       const SQL_BOX_DEF = {
         fill: "#eeeeee",
-        padding: {x:50, y:50},
         margin: {x:30, y:10},
+        padding: {x:50, y:50},
         radius: 3,
 
-        title_text_offset_x: 5,
-        title_text_offset_y: 5,
-        title_text_fontsize: 14,
-
-        text_color: "#555555"
-      }
-      */
+        title_text: {
+          offset: {x:5, y:5},
+          text_color: "#666",
+        },
+        fontsize: 14,
+      };
       const TABLE_DEF = {
-        width: 100,
-        header_height: 30,
-        row_height: 20,
-        padding: {x:10, y:10},
+        width: 200,
         margin: {x:30, y:30},
+        padding: {x:10, y:10},
         radius: 5,
-        fill: "#ff3fff"
-      }
-      const SQL_BOX_DEF = {
-        fill: "#eeeeee",
-        padding: {x:50, y:50},
-        margin: {x:30, y:10},
-        radius: 3,
+        fill: "#fff",
+        border: {
+          width: 1,
+          color: "#aaa",
+        },
 
-        title_text_offset_x: 5,
-        title_text_offset_y: 5,
-        title_text_fontsize: 14,
+        title: {
+          height: 30,
+          padding: {x:5, y:5},
+          fill: "#cde",
+          fontsize: 18,
+          text_color: "#555555",
+        },
 
-        text_color: "#555555"
-      }
+        column: {
+          height: 20,
+          padding: {x:5, y:5},
+          fill: "#def",
+          border: {
+            width: 1,
+            color: "#ddd",
+          },
+          fontsize: 14,
+          text_color: "#555555",
+        },
+      };
 
 
       class TableInfo {
@@ -73,7 +71,7 @@
         get_column_idx(column_name){
           return this.columns.indexOf(column_name);
         }
-      }
+      };
       class TableManageInfo {
         constructor(){
           this.tables = [];
@@ -117,7 +115,7 @@
             this.table_rank[from_table_idx] = this.table_rank[to_table_idx] + 1;
           }
         }
-      }
+      };
 
       function get_tab_cols_from_expr(expr){
         // exprから元のテーブル名,列名を取り出す
@@ -148,7 +146,7 @@
           console.error("[ERROR!] Unknown expr.type["+d.expr.type+"]");
         }
         return from_columns;
-      }
+      };
 
       function get_lineage_tables(ast_select){
         let t_mng = new TableManageInfo();
@@ -184,18 +182,19 @@
 
         //console.log(t_mng);
         return t_mng;
-      }
+      };
 
       function get_table_height(table_info){
         return TABLE_DEF.padding.y * 3
-          + TABLE_DEF.header_height
-          + table_info.columns.length * TABLE_DEF.row_height;
-      }
+          + TABLE_DEF.title.height
+          + TABLE_DEF.column.height * table_info.columns.length;
+      };
       function draw_onetable(svg, table_info, offset_x, offset_y){
-        const tablename_id = (table_info.table_name?table_info.table_name:"__no_name__")
+        const table_name = table_info.table_name ? table_info.table_name : "__no_name__"
           .replace(/ /g, "_")
           .replace(/\./g, "_")
           .toLowerCase();
+        const tablename_id = table_name;
         const tbl_x =
           offset_x
           + TABLE_DEF.margin.x
@@ -210,6 +209,7 @@
           .data([1])
           .enter()
           .append("rect")
+            .attr("id", `table_${tablename_id}`)
             .attr("x", tbl_x)
             .attr("y", tbl_y)
             .attr("width", tbl_width)
@@ -217,7 +217,8 @@
             .attr("rx", TABLE_DEF.radius)
             .attr("ry", TABLE_DEF.radius)
             .attr("fill", TABLE_DEF.fill)
-            .attr("id", `table_${tablename_id}`)
+            .attr("stroke", TABLE_DEF.border.color)
+            .attr("stroke-width", TABLE_DEF.border.width)
         ;
 
         // for debug
@@ -225,6 +226,7 @@
           .data([1])
           .enter()
           .append("rect")
+            .attr("id", `debug_table_${tablename_id}`)
             .attr("x", tbl_x - TABLE_DEF.margin.x)
             .attr("y", tbl_y - TABLE_DEF.margin.y)
             .attr("width", tbl_width + TABLE_DEF.margin.x*2)
@@ -232,15 +234,73 @@
             .attr("fill", "none")
             .attr("stroke", "#f00")
             .attr("stroke-width", 1)
-            .attr("stroke-dasharray", "10,5")
-            .attr("id", `debug_table_${tablename_id}`)
+            .attr("stroke-dasharray", "5,10")
+        ;
+
+        // title
+        const title_x = tbl_x + TABLE_DEF.padding.x
+        , title_y = tbl_y + TABLE_DEF.padding.y
+        , title_width = tbl_width - TABLE_DEF.padding.x*2
+        , title_height = TABLE_DEF.title.height;
+        svg.selectAll(`rect#rect_tblname_${tablename_id}`)
+          .data([1])
+          .enter()
+          .append("rect")
+            .attr("id", `rect_tblname_${tablename_id}`)
+            .attr("x", title_x)
+            .attr("y", title_y)
+            .attr("width", title_width)
+            .attr("height", title_height)
+            .attr("fill", TABLE_DEF.title.fill)
           ;
+        svg.selectAll(`text#text_tblname_${tablename_id}`)
+          .data([1])
+          .enter()
+          .append("text")
+            .attr("id", `text#text_tblname_${tablename_id}`)
+            .text(table_name)
+            .attr("x", title_x + TABLE_DEF.title.padding.x)
+            .attr("y", title_y + TABLE_DEF.title.padding.y + TABLE_DEF.title.fontsize)
+            .attr("font-size", TABLE_DEF.title.fontsize)
+        ;
+
+        // columns
+        const col_x = title_x
+        , col_y_top = title_y + title_height + TABLE_DEF.padding.y
+        , col_width = title_width
+        , col_height = TABLE_DEF.column.height;
+        svg.selectAll(`rect.rect_columns_${tablename_id}`)
+          .data(table_info.columns)
+          .enter()
+          .append("rect")
+            .attr("class", `rect_columns_${tablename_id}`)
+            .attr("x", col_x)
+            .attr("y", (d,i)=>(
+              col_y_top + TABLE_DEF.column.height * i
+            ))
+            .attr("width", col_width)
+            .attr("height", col_height)
+            .attr("fill", TABLE_DEF.column.fill)
+            .attr("stroke", TABLE_DEF.column.border.color)
+            .attr("stroke-width", TABLE_DEF.column.border.width)
+          ;
+        svg.selectAll(`text.text_columns_${tablename_id}`)
+          .data(table_info.columns)
+          .enter()
+          .append("text")
+            .attr("class", `rect_columns_${tablename_id}`)
+            .text((d)=>(d))
+            .attr("x", col_x + TABLE_DEF.column.padding.x)
+            .attr("y", (d,i)=>(
+              col_y_top + TABLE_DEF.column.height * i + TABLE_DEF.column.fontsize
+            ))
+            .attr("font-size", TABLE_DEF.column.fontsize)
 
         return tbl_y
           + tbl_height
           + TABLE_DEF.margin.y
         ;
-      }
+      };
 
       function draw_tables_onefile(svg, t_mng, filename, create=true){
         const filename_id = filename.replace(/ /g, "_").toLowerCase();
@@ -255,7 +315,6 @@
         ;
 
         // onefile rect
-        console.debug("onefile rect");
         let file_x = SQL_BOX_DEF.margin.x,
         file_y = SQL_BOX_DEF.margin.y,
         w = 
@@ -274,7 +333,6 @@
               TABLE_DEF.margin.y * 2
                 + get_table_height(to)
             });
-            console.log({hight_by_rank});
             // その最大値
             return Math.max(...hight_by_rank);
           })()
@@ -283,6 +341,7 @@
           .data([1])
           .enter()
           .append("rect")
+            .attr("id", `sqlbox_${filename_id}`)
             .attr("x", file_x)
             .attr("y", file_y)
             .attr("width", w)
@@ -291,25 +350,23 @@
             .attr("ry", SQL_BOX_DEF.radius)
             .attr("fill", SQL_BOX_DEF.fill)
             .attr("class", "box")
-            .attr("id", `sqlbox_${filename_id}`)
         ;
         let sql_box_text_elm = onefile_rect_elm.selectAll(`text#filename_${filename_id}`)
           .data([1])
           .enter()
           .append("text")
-            .attr("x", file_x + SQL_BOX_DEF.title_text_offset_x)
-            .attr("y", file_y + SQL_BOX_DEF.title_text_offset_y+SQL_BOX_DEF.title_text_fontsize)
-            .text(filename)
-            .attr("font-size", SQL_BOX_DEF.title_text_fontsize)
-            .attr("fill", SQL_BOX_DEF.text_color)
             .attr("id", `filename_${filename_id}`)
+            .attr("x", file_x + SQL_BOX_DEF.title_text.offset.x)
+            .attr("y", file_y + SQL_BOX_DEF.title_text.offset.y + SQL_BOX_DEF.fontsize)
+            .text(filename)
+            .attr("font-size", SQL_BOX_DEF.fontsize)
+            .attr("fill", SQL_BOX_DEF.title_text.text_color)
         ;
 
         // table_rankごとのオフセットポイント
         let offset_y_by_rank = [...Array(table_rank_max+1)].map(
           ()=>(file_y + SQL_BOX_DEF.padding.y)
         );
-        console.log({offset_y_by_rank});
 
         // tableを描画
         t_mng.table_objs.forEach((to,i)=>{
@@ -326,7 +383,7 @@
           offset_y_by_rank[t_mng.table_rank[i]] = updated_offset_y;
         });
 
-      }
+      };
 
       function add_sql_ast(d3_svg, ast, filename){
         // parse & get TableManageInfo
@@ -334,7 +391,7 @@
 
         // draw
         draw_tables_onefile(d3_svg, t_mng, filename);
-      }
+      };
 
 
       const svg = d3.select("#target");
